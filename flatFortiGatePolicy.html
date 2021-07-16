@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+
+<meta charset="utf-8">
+
+<!--
+/*!
+* ============================================================================
+*
+* Flat FortiGate Policy
+*
+* flatFortiGatePolicy.html
+*
+* Copyright (c) 2021 joelob99
+*
+* Released under the MIT License, see LICENSE.txt.
+*
+* History
+*   2021-07-16: First Release.
+*
+* ============================================================================
+*/
+-->
+
+<link rel="stylesheet" title="" media="all" type="text/css" href="flatAcl.css">
+
+</head>
+
+<body>
+
+<p class="warranty">No warranty of any kind: use at your own risk</p>
+
+<hr>
+
+<h1>Flat FortiGate Policy</h1>
+
+<p>This script flattens the firewall policy of the FortiGate configuration. Please follow the steps below.</p>
+<p><b>Limitation:</b>
+<ul>
+<li>IPv4, IPv6, IPv4 to IPv6, and IPv6 to IPv4 policies are supported. Also, IPv4 and IPv6 multicast NAT policies are supported.</li>
+<li>Dynamic and template types in the address object are not supported.</li>
+<li>NAT and VIP are not supported. Therefore, NAT and VIP parameters in policy are not flattened.</li>
+<li>FQDN and geography are not resolved to its IP address when lookup. Therefore, it can not recognize whether FQDN and geography are within the IP segment and the IP range.</li>
+</ul>
+</p>
+
+<h2>Step 1 - Select the configuration file.</h2>
+
+<p>Select the configuration file to flatten.</p>
+<form name="FileContent">
+<div><label for="select_config" class="label_input_file">Choose File<input type="file" id="select_config" style="display: none;"></label><input type="text" id="config_filename" readonly class="filename"></div>
+<div><span id="progress_reading" class="blink_progress"></span></div>
+<textarea name="text_config" rows="10" readonly style="background-color: whitesmoke;"></textarea>
+</form>
+
+<hr>
+
+<h2>Step 2 - Flatten the configuration.</h2>
+
+<p>Select the following options and click the 'RUN' button.</p>
+
+<form name="FlattenContent">
+<div><input type="checkbox" id="flatten_address" name="flatten_address" checked><label for="flatten_address">Flatten address and address-group objects.</label></div>
+<div><input type="checkbox" id="flatten_service" name="flatten_service" checked><label for="flatten_service">Flatten service and service-group objects.</label></div>
+<button type="button" id="run">RUN</button>
+<span id="progress_flattening" class="blink_progress"></span>
+
+<p>Address and address-group objects</p>
+<textarea name="addresses" rows="10" readonly style="background-color: whitesmoke;"></textarea>
+<p>Service and service-group objects</p>
+<textarea name="services" rows="10" readonly style="background-color: whitesmoke;"></textarea>
+<p>Normalized policies</p>
+<textarea name="normalized_policy" rows="10" readonly style="background-color: whitesmoke;"></textarea>
+<p>Flattened policies</p>
+<textarea name="flattened_policy_all" rows="10" readonly style="background-color: whitesmoke;"></textarea>
+</form>
+
+<hr>
+
+<h2>Step 3 - Look up the IP address.</h2>
+
+<p>Confirms whether IP address and FQDN match in policies. Enter addresses or select an address list file, and click the 'LOOKUP' button.
+</p>
+
+<form name="LookupContent">
+<div>
+<div><label for="select_lookup" class="label_input_file">Choose File<input type="file" id="select_lookup" style="display: none;"></label><input type="text" id="lookup_filename" readonly class="filename"></div>
+<textarea name="lookup_list" rows="10">
+# Here is an example of the address list.
+#
+# Format:
+#   Source Address,Destination Address[,Comment]
+#
+#   A comma is required as the separator.
+#   The comment field can omit.
+#
+# Example when looks up only source address. It needs a comma at the end.
+#
+192.168.0.1,,from IPv4 host
+192.168.0.1/32,,from IPv4 host
+192.168.1.0/24,,from IPv4 subnet
+2001:db8:1:2::101/128,,from IPv6 host
+2001:db8:1:2::/64,,from IPv6 subnet
+example.com,,from FQDN
+fqdn:www.example.com,,from FQDN
+geo:US,,from geography
+
+#
+# Example when looks up only destination address. It needs a comma at the start.
+#
+,192.168.0.1,to IPv4 host
+,192.168.0.1/32,to IPv4 host
+,192.168.1.0/24,to IPv4 subnet
+,2001:db8:1:2::101/128,to IPv6 host
+,2001:db8:1:2::/64,to IPv6 subnet
+,example.com,to FQDN
+,fqdn:www.example.com,to FQDN
+,geo:US,to geography
+
+#
+# Example when looks up both source and destination.
+#
+192.168.0.1,10.0.0.1/32,from IPv4 host to IPv4 host
+192.168.0.1/32,10.10.0.0/16,from IPv4 host to IPv4 subnet
+2001:db8:1:2::101/128,2001:db8:1000:2000::201/128,from IPv6 host to IPv6 host
+2001:db8:1:2::101/128,2001:db8:1000:2000::/64,from IPv6 host to IPv6 subnet
+192.168.0.1/32,example.com,from IPv4 host to FQDN
+192.168.0.1,geo:US,from IPv4 host to geography
+2001:db8:1:2::101/128,fqdn:www.example.com,from IPv6 host to FQDN
+</textarea>
+</div>
+<div><input type="checkbox" id="fqdn_and_geo_match_all" name="fqdn_and_geo_match_all"><label for="fqdn_and_geo_match_all">FQDN and geography match IPv4 and IPv6 format addresses.</label></div>
+<button type="button" id="lookup">LOOKUP</button>
+<span id="progress_searching" class="blink_progress"></span>
+
+<p>Matched entries</p>
+<div><select id="filter_dom_name"></select><select id="filter_src_intf"></select></select></div>
+<textarea name="lookup_result" rows="10" readonly style="background-color: whitesmoke;"></textarea>
+<textarea name="lookup_result_data_stored" rows="10" readonly style="display: none;"></textarea>
+<p>Matched entries (exclued ineffectual entries)</p>
+<div><select id="filter_dom_name_EI"></select><select id="filter_src_intf_EI"></select></select></div>
+<textarea name="lookup_resultEI" rows="10" readonly style="background-color: whitesmoke;"></textarea>
+<textarea name="lookup_resultEI_data_stored" rows="10" readonly style="display: none;"></textarea>
+</form>
+
+<script>
+const FLAT_ACL_FILE_NAME = 'flatFortiGatePolicy.js';
+
+const MSG_MAKE_LIST  = 1;
+const MSG_MADE_LIST  = 2;
+const MSG_NORMALIZE  = 3;
+const MSG_NORMALIZED = 4;
+const MSG_FLATTEN    = 5;
+const MSG_FLATTENED  = 6;
+const MSG_LOOKUP     = 7;
+const MSG_LOOKEDUP   = 8;
+
+const MENU_ALL_DOMAIN   = 'All Domains';
+const MENU_ALL_SRC_INTF = 'All Source Interfaces';
+
+/**
+* Column number of normalized policy.
+*
+* @const {number}
+*
+*/
+const NMCOL_DOM_NAME        = 0;
+const NMCOL_SRC_INTF        = 1;
+
+let workerFlatAcl = null;
+
+/**
+* This function creates the worker thread.
+*
+*/
+function createWorker() {
+    deleteWorker();
+
+    if (window.Worker) {
+        const strFlatAclUrl = window.location.href.replace(/\/[^\/]*$/, '/') + FLAT_ACL_FILE_NAME;
+        const brobFlatAcl = new Blob([`importScripts("${strFlatAclUrl}");`], {type: 'application/javascript'});
+        workerFlatAcl = new Worker(URL.createObjectURL(brobFlatAcl));
+    } else {
+        alert('Browser doesn\'t support web workers.');
+    }
+}
+
+/**
+* This function deletes the worker thread.
+*
+*/
+function deleteWorker() {
+    if (workerFlatAcl != null) {
+        workerFlatAcl.terminate();
+    }
+    workerFlatAcl = null;
+}
+
+/**
+* This function retrieves the file name string from the full path string or
+* the file name string and returns the retrieved string.
+*
+* @param {string} strFileNameOrFullPath -
+*   Chrome: Full path string.
+*   Firefox: File name string.
+* @return {string} File name string.
+*
+*/
+function getFileName(strFileNameOrFullPath) {
+    const array = strFileNameOrFullPath.replace(/[\\]/g, '/').match(/\/([^\/]*)$/);
+    return (array ? array[1] : strFileNameOrFullPath);
+}
+
+/**
+* This function makes the menu and sets it into the specified id element.
+*
+* @param {Object} textareaDataStored - Textarea of flattened policies.
+* @param {string} strElementId - Element id to make the menu.
+* @param {number} intColumnIndex - Column index to make the menu.
+* @param {string} strAllName -
+*   String that means 'all' for the specified column.
+*
+*/
+function make_menu(textareaDataStored, strElementId, intColumnIndex, strAllName) {
+    const arrayMenuItem = [];
+    const arrayText = textareaDataStored.value.split('\n');
+    for (let i=0; i<arrayText.length; ++i) {
+        const arrayColumn = arrayText[i].split(',');
+        arrayMenuItem.push(arrayColumn[intColumnIndex+1]); // +1 is for the lookup result 1st column.
+    }
+    const arrayUniqMenuItem = Array.from(new Set(arrayMenuItem));
+    arrayUniqMenuItem.unshift(strAllName);
+
+    /* See https://developer.mozilla.org/en-US/docs/Web/API/Node/removeChild
+    */
+    const selectItem = document.getElementById(strElementId);
+    while (selectItem.firstChild) {
+        selectItem.removeChild(selectItem.firstChild);
+    }
+
+    for (let i=0; i<arrayUniqMenuItem.length; ++i) {
+        const option = document.createElement('option');
+        option.setAttribute('value', arrayUniqMenuItem[i]);
+        option.innerHTML = arrayUniqMenuItem[i];
+        selectItem.appendChild(option);
+    }
+}
+
+/**
+* This function refreshes the lookup result Textarea by the selected item in
+* the menu.
+*
+* @param {Object} textareaDataStored - Textarea of flattened policies.
+* @param {string} strDomNameSelectElementId -
+*   Id of the domain name select element.
+* @param {string} strSrcIntfSelectElementId -
+*   Id of the source interface select element.
+* @param {Object} textareaLookupResult - It is the textarea of the lookup result to refresh.
+*
+*/
+function refresh_lookup_result(textareaDataStored, strDomNameSelectElementId, strSrcIntfSelectElementId, textareaLookupResult) {
+    textareaLookupResult.value = '';
+
+    const strSelectedDomName = document.getElementById(strDomNameSelectElementId).value;
+    const strSelectedSrcIntf = document.getElementById(strSrcIntfSelectElementId).value;
+
+    if (strSelectedDomName === MENU_ALL_DOMAIN && strSelectedSrcIntf === MENU_ALL_SRC_INTF) {
+        textareaLookupResult.value = textareaDataStored.value;
+    } else {
+        const arrayPolicy = [];
+        const arrayText = textareaDataStored.value.split('\n');
+        for (let i=0; i<arrayText.length; ++i) {
+            const arrayColumn = arrayText[i].split(',');
+            if ((strSelectedDomName === MENU_ALL_DOMAIN && arrayColumn[NMCOL_SRC_INTF+1] === strSelectedSrcIntf) ||
+                (strSelectedSrcIntf === MENU_ALL_SRC_INTF && arrayColumn[NMCOL_DOM_NAME+1] === strSelectedDomName) ||
+                (arrayColumn[NMCOL_DOM_NAME+1] === strSelectedDomName && arrayColumn[NMCOL_SRC_INTF+1] === strSelectedSrcIntf)) {
+                arrayPolicy.push(arrayText[i]);
+            }
+        }
+        textareaLookupResult.value = arrayPolicy.join('\n');
+    }
+}
+
+/**
+* This is the main function.
+*
+*/
+function main() {
+    document.FileContent.text_config.value = '';
+    document.FlattenContent.addresses.value = '';
+    document.FlattenContent.services.value = '';
+
+    if (workerFlatAcl != null) {
+        /**
+        * This function handles responses from the worker thread and updates the
+        * browser screen. Also, it sends the next request, depending on the response.
+        *
+        * @param {Object} e : MessageEvent object from the worker thread.
+        */
+        workerFlatAcl.onmessage = function(e) {
+            if (e.data[0]) {
+                switch (e.data[0]) {
+                case MSG_MADE_LIST:
+                    document.getElementById('progress_flattening').textContent = 'In normalizing...';
+                    document.FlattenContent.addresses.value = e.data[1];
+                    document.FlattenContent.services.value = e.data[2];
+                    workerFlatAcl.postMessage([
+                        MSG_NORMALIZE,
+                        document.FileContent.text_config.value,
+                    ]);
+                    break;
+                case MSG_NORMALIZED:
+                    document.getElementById('progress_flattening').textContent = 'In flattening...';
+                    document.FlattenContent.normalized_policy.value = e.data[1];
+                    workerFlatAcl.postMessage([
+                        MSG_FLATTEN,
+                        document.FlattenContent.flatten_address.checked,
+                        document.FlattenContent.flatten_service.checked,
+                    ]);
+                    break;
+                case MSG_FLATTENED:
+                    document.FlattenContent.flattened_policy_all.value = e.data[1];
+                    document.getElementById('progress_flattening').textContent = '';
+                    break;
+                case MSG_LOOKEDUP:
+                    document.LookupContent.lookup_result_data_stored.value = e.data[1];
+                    document.LookupContent.lookup_resultEI_data_stored.value = e.data[2];
+                    document.getElementById('progress_searching').textContent = '';
+                    make_menu(document.LookupContent.lookup_result_data_stored, 'filter_dom_name', NMCOL_DOM_NAME, MENU_ALL_DOMAIN);
+                    make_menu(document.LookupContent.lookup_resultEI_data_stored, 'filter_dom_name_EI', NMCOL_DOM_NAME, MENU_ALL_DOMAIN);
+                    make_menu(document.LookupContent.lookup_result_data_stored, 'filter_src_intf', NMCOL_SRC_INTF, MENU_ALL_SRC_INTF);
+                    make_menu(document.LookupContent.lookup_resultEI_data_stored, 'filter_src_intf_EI', NMCOL_SRC_INTF, MENU_ALL_SRC_INTF);
+                    document.getElementById('filter_dom_name').options[0].selected = true;
+                    document.getElementById('filter_dom_name').dispatchEvent(new Event('change'));
+                    document.getElementById('filter_dom_name_EI').options[0].selected = true;
+                    document.getElementById('filter_dom_name_EI').dispatchEvent(new Event('change'));
+                    document.getElementById('filter_src_intf').options[0].selected = true;
+                    document.getElementById('filter_src_intf').dispatchEvent(new Event('change'));
+                    document.getElementById('filter_src_intf_EI').options[0].selected = true;
+                    document.getElementById('filter_src_intf_EI').dispatchEvent(new Event('change'));
+                    break;
+                }
+            } else {
+                console.warn('BROWSER: Received an invalid message.');
+            }
+        };
+
+        const fileReaderConfig = new FileReader();
+        const fileReaderLookup = new FileReader();
+
+        document.getElementById('select_config').addEventListener('change', function(evtChange) {
+            document.getElementById('progress_reading').textContent = 'In reading configuration...';
+
+            const file = evtChange.target.files;
+            fileReaderConfig.readAsText(file[0]);
+            fileReaderConfig.onload = function(evtOnLoad) {
+                document.FileContent.text_config.value = fileReaderConfig.result;
+                document.getElementById('config_filename').value = getFileName(document.getElementById('select_config').value);
+                document.getElementById('select_config').value = '';
+                document.getElementById('progress_reading').textContent = '';
+            };
+        });
+
+        document.getElementById('run').addEventListener('click', function(evtClick) {
+            if (fileReaderConfig.result !== '') {
+                document.getElementById('progress_flattening').textContent = 'In parsing...';
+                document.FlattenContent.addresses.value = '';
+                document.FlattenContent.services.value = '';
+                document.FlattenContent.normalized_policy.value = '';
+                document.FlattenContent.flattened_policy_all.value = '';
+
+                workerFlatAcl.postMessage([
+                    MSG_MAKE_LIST,
+                    document.FileContent.text_config.value,
+                ]);
+            }
+        });
+
+        document.getElementById('select_lookup').addEventListener('change', function(evtChange) {
+            const file = evtChange.target.files;
+            fileReaderLookup.readAsText(file[0]);
+            fileReaderLookup.onload = function(evtOnLoad) {
+                document.LookupContent.lookup_list.value = fileReaderLookup.result;
+                document.getElementById('lookup_filename').value = getFileName(document.getElementById('select_lookup').value);
+                document.getElementById('select_lookup').value = '';
+            };
+        });
+
+        document.getElementById('lookup').addEventListener('click', function(evtClick) {
+            if (fileReaderLookup.result !== '') {
+                document.getElementById('progress_searching').textContent = 'In searching...';
+                document.LookupContent.lookup_result.value = '';
+                document.LookupContent.lookup_result_data_stored.value = '';
+                document.LookupContent.lookup_resultEI.value = '';
+                document.LookupContent.lookup_resultEI_data_stored.value = '';
+                workerFlatAcl.postMessage([
+                    MSG_LOOKUP,
+                    document.LookupContent.lookup_list.value,
+                    document.LookupContent.fqdn_and_geo_match_all.checked,
+                ]);
+            }
+        });
+
+        document.getElementById('filter_dom_name').addEventListener('change', function(evtChange) {
+            refresh_lookup_result(document.LookupContent.lookup_result_data_stored, 'filter_dom_name', 'filter_src_intf', document.LookupContent.lookup_result);
+        });
+        document.getElementById('filter_src_intf').addEventListener('change', function(evtChange) {
+            refresh_lookup_result(document.LookupContent.lookup_result_data_stored, 'filter_dom_name', 'filter_src_intf', document.LookupContent.lookup_result);
+        });
+
+        document.getElementById('filter_dom_name_EI').addEventListener('change', function(evtChange) {
+            refresh_lookup_result(document.LookupContent.lookup_resultEI_data_stored, 'filter_dom_name_EI', 'filter_src_intf_EI', document.LookupContent.lookup_resultEI);
+        });
+        document.getElementById('filter_src_intf_EI').addEventListener('change', function(evtChange) {
+            refresh_lookup_result(document.LookupContent.lookup_resultEI_data_stored, 'filter_dom_name_EI', 'filter_src_intf_EI', document.LookupContent.lookup_resultEI);
+        });
+    }
+}
+
+/**
+* This function registers the 'beforeunload' event listener.
+*
+*/
+window.addEventListener('beforeunload', (event) => {
+    deleteWorker();
+});
+
+/**
+* This function creates the worker thread and then runs the main function.
+*
+*/
+window.onload = function() {
+    createWorker();
+    main();
+};
+</script>
+
+</body>
+</html>
