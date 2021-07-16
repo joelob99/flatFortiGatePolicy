@@ -56,38 +56,41 @@ DOM_NAME,S_INTF,D_INTF,POL_TYPE,POL_ID,POL_NAME,POL_LINE,{accept|deny|ipsec},PRO
 
   - PROT format is the following. If the protocol number is '0', it is changed to 'ip.'
 
-      'NN'
-      NN: protocol-number or 'ip'
+        'NN'
+
+        NN: protocol-number or 'ip'
 
   - S_PORT and D_PORT format is the following. If PROT is '6'(tcp), '17'(udp), or '132'(sctp) and the port condition is not specified, S_PORT is described as 'eq/any'. If PROT is neither '6', '17', nor '58', S_PORT and D_PORT are described as '-/-'.
 
-      'eq/NN'
-      'range/SN-EN'
-      NN: port-number or 'any'
-      SN: start port-number
-      EN: end port-number
+        'eq/NN'
+        'range/SN-EN'
+
+        NN: port-number or 'any'
+        SN: start port-number
+        EN: end port-number
 
   - I_TPCD format is the following. If icmp-type or icmp-code is not specified explicitly, it is described as 'any'. If PROT is not '1'(icmp) and '58'(icmp6), I_TPCD is described as '-/-'.
 
-      'TN/CN'
-      TN: icmp-type number or 'any'
-      CN: icmp-code number or 'any'
+        'TN/CN'
+
+        TN: icmp-type number or 'any'
+        CN: icmp-code number or 'any'
 
   - S_ADDR and D_ADDR are CIDR representations if the network address is host or subnet address. IPv6 address is adapted to the full represented. If the network address is a range, S_ADDR and D_ADDR are not CIDR representations. Its address is described in start-address, a hyphen, end-address as following.
 
-      IPv4: 'x.x.x.x-y.y.y.y'
-      IPv6: 'xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx-yyyy:yyyy:yyyy:yyyy:yyyy:yyyy:yyyy:yyyy'
+        IPv4: 'x.x.x.x-y.y.y.y'
+        IPv6: 'xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx-yyyy:yyyy:yyyy:yyyy:yyyy:yyyy:yyyy:yyyy'
 
     Also, if the network address is a wildcard address, its address is described in IPv4 address, a slash, IPv4 wildcard mask, as following.
 
-      IPv4: 'x.x.x.x/m.m.m.m'
+        IPv4: 'x.x.x.x/m.m.m.m'
 
     If the network address is FQDN, S_ADDR and D_ADDR are described as FQDN with the prefix is 'fqdn:'. If the network address is geography, S_ADDR and D_ADDR are described as the country name with the prefix is 'geo:'.
 
     'all' network address is converted as following rules.
 
-      IPv4: '0.0.0.0/0'
-      IPv6: '0000:0000:0000:0000:0000:0000:0000:0000/0'
+        IPv4: '0.0.0.0/0'
+        IPv6: '0000:0000:0000:0000:0000:0000:0000:0000/0'
 
   - SD_ADDR is the CIDR representation if the service destination address is a host address. If the service destination address is a range, it is described in start-address, a hyphen, end-address. Its prefix is 'fqdn:' when FQDN. It is described as '0/0' if the service destination address is '0.0.0.0.' If PROT is neither '6', '17', nor '58', SD_ADDR is described as '-'.
 
